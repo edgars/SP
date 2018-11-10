@@ -1,0 +1,27 @@
+@App:name('ETLStreamApp')
+@App:description('ETL from CSV ')
+
+
+@source(type = 'file', mode = 'line', tailing = 'false', dir.uri = 'file:/Users/edgar/Documents/DEV/2018/SP/ETL/IN', action.after.process = 'delete', 
+@map(type = 'csv', header = 'true', 
+@attributes(distrito = '2', endereco = '1', latitude = '7', crime = '5', dataHora = '0', codigocrime = '6', longitude = '8')))
+
+define stream CargaInicialCrimesStream (dataHora string, endereco string, distrito string, crime string, codigocrime string, latitude string, longitude string);
+
+
+@sink(type = 'log', priority="info") 
+define stream Distrito115Stream (dataHora string, endereco string, crime string, latitude string, longitude string, totalCount long);
+@sink(type = 'log', priority="info") 
+define stream TotalDeLinhasStream (totalCount long);
+
+-- Count the incoming events
+@info(name = 'QueryTotalDeLinhas')
+from CargaInicialCrimesStream 
+select count() as totalCount 
+insert into TotalDeLinhasStream;
+
+-- Distrito equals 115
+@info(name = 'QueryDistritoIgual115')
+from CargaInicialCrimesStream[(codigocrime == '5400')] 
+select dataHora, endereco, crime, latitude, longitude,count() as totalCount 
+insert into Distrito115Stream;
